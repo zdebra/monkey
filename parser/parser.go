@@ -1,20 +1,26 @@
 package parser
 
 import (
+	"fmt"
+
 	"github.com/zdebra/monkey/ast"
 	"github.com/zdebra/monkey/lexer"
 	"github.com/zdebra/monkey/token"
 )
 
 type Parser struct {
-	l *lexer.Lexer
+	l      *lexer.Lexer
+	errors []string
 
 	curToken  token.Token
 	peekToken token.Token
 }
 
 func New(l *lexer.Lexer) *Parser {
-	p := &Parser{l: l}
+	p := &Parser{
+		l:      l,
+		errors: []string{},
+	}
 
 	p.nextToken()
 	p.nextToken()
@@ -24,6 +30,15 @@ func New(l *lexer.Lexer) *Parser {
 func (p *Parser) nextToken() {
 	p.curToken = p.peekToken
 	p.peekToken = p.l.NextToken()
+}
+
+func (p *Parser) Errors() []string {
+	return p.errors
+}
+
+func (p *Parser) peekError(t token.Type) {
+	msg := fmt.Sprintf("expected next token to be %s, got %s instead", t, p.peekToken.Type)
+	p.errors = append(p.errors, msg)
 }
 
 func (p *Parser) ParseProgram() *ast.Program {
@@ -79,6 +94,7 @@ func (p *Parser) curTokenIs(t token.Type) bool {
 
 func (p *Parser) expectPeek(t token.Type) bool {
 	if !p.peekTokenIs(t) {
+		p.peekError(t)
 		return false
 	}
 	p.nextToken()
